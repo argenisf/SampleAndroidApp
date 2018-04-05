@@ -15,6 +15,11 @@ import com.mixpanel.android.mpmetrics.MixpanelAPI;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.TimeZone;
+
 public class Auth extends AppCompatActivity {
 
     private MixpanelAPI mixpanel;
@@ -42,16 +47,30 @@ public class Auth extends AppCompatActivity {
                 if(mEmailInput.getText().toString().trim().length() > 0 && mNameInput.getText().toString().trim().length() > 0){
                     if(isValidEmail(mEmailInput.getText().toString().trim())){
 
-                        //all checked, let's log in and proceed
+                        String theEmail = mEmailInput.getText().toString().trim();
+
+                        // all checked, let's log in and proceed
                         JSONObject props = new JSONObject();
                         try {
+                            TimeZone tz = TimeZone.getTimeZone("UTC");
+                            DateFormat df = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm'Z'");
+                            df.setTimeZone(tz);
+                            String nowAsISO = df.format(new Date());
+
+                            props.put("$created", nowAsISO);
+                            props.put("$email",theEmail);
+                            props.put("$name",mNameInput.getText().toString().trim());
                             props.put("loggedIn",true);
                         } catch (JSONException e) {}
+                        // register super properties
                         mixpanel.registerSuperProperties(props);
+                        //create the alias
+                        mixpanel.alias(theEmail,mixpanel.getDistinctId());
 
                         Sticker sticker = new Sticker(true);
                         Intent intent = new Intent(mContext, StickerActivity.class);
                         intent.putExtra("stickerId",sticker.getSticketId());
+                        intent.putExtra("justSignedUp",true);
                         startActivity(intent);
                         finish();
 
